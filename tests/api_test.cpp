@@ -68,9 +68,12 @@ int main() {
     ReLimiterSettingInfo info {};
     info.struct_size = sizeof(info);
     CHECK(api->describe_setting(api->setting_count(), &info) == 0, "out of range fails");
-    ReLimiterSettingInfo small {};
-    small.struct_size = 4;
-    CHECK(api->describe_setting(0, &small) == 0, "an undersized struct is refused");
+    // NOT named `small`: rpcndr.h, via Windows.h, does `#define small char`, so a variable of that
+    // name becomes `ReLimiterSettingInfo char {}` and MSVC rejects it. A stubbed Windows.h off-platform
+    // does not define it, which is exactly the false confidence a stub buys.
+    ReLimiterSettingInfo undersized {};
+    undersized.struct_size = 4;
+    CHECK(api->describe_setting(0, &undersized) == 0, "an undersized struct is refused");
 
     // Numbers reach the real fields, in both directions and for each storage type.
     double v = -1;
