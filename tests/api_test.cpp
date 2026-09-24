@@ -113,6 +113,57 @@ int main() {
     CHECK(api->get_string("window_mode", buf, 0) == 0, "a zero-length buffer fails");
     CHECK(api->get_string("target_fps", buf, sizeof(buf)) == 0, "a number is not readable as a string");
 
+    // ── The special zero, which is what makes an fps slider honest ──
+    //
+    // target_fps = 0 does not mean "0 fps" or "no limit", it means "stay below the VRR ceiling", and
+    // ValidateConfig clamps anything else to 30..1000. A host that reads min_value as the bottom of a
+    // slider offers 1..29 fps, all of which ReLimiter throws away on the next load. zero_label is how
+    // a host knows to render 0 as a named mode and the range above it.
+    ReLimiterSettingInfo tf {};
+    tf.struct_size = sizeof(tf);
+    bool foundTargetFps = false;
+    for (uint32_t i = 0; i < api->setting_count(); ++i) {
+        ReLimiterSettingInfo info {};
+        info.struct_size = sizeof(info);
+        api->describe_setting(i, &info);
+        if (std::strcmp(info.key, "target_fps") == 0) { tf = info; foundTargetFps = true; }
+        // A range must not be inverted, whatever else is true of it.
+        CHECK(info.min_value <= info.max_value, "min_value <= max_value");
+        // No structural invariant is asserted between min_value and zero_label, because there isn't
+        // one: osd_scale is 0.5..2.0 because 0 is simply INVALID there, while target_fps is 30..1000
+        // because 0 is special and legal. Only the data knows which, so the behaviour is what gets
+        // tested -- below, a labelled zero must survive the setter and an unlabelled one must clamp.
+        if (info.zero_label) CHECK(*info.zero_label != '\0', "a zero_label is never empty");
+    }
+    CHECK(foundTargetFps, "target_fps is in the registry");
+    CHECK(tf.zero_label != nullptr, "target_fps has a special zero");
+    CHECK(tf.min_value == 30 && tf.max_value == 1000, "target_fps range matches ValidateConfig (30..1000)");
+
+    // 0 must survive the setter untouched. Clamping it up to the minimum would silently convert
+    // "automatic" into a hard 30 fps cap -- the exact bug this concept exists to prevent.
+    CHECK(api->set_number("target_fps", 0) == 1 && g_config.target_fps == 0, "a special zero is not clamped away");
+    // Above zero it clamps normally, in both directions.
+    CHECK(api->set_number("target_fps", 141) == 1 && g_config.target_fps == 141, "an in-range target is kept");
+    CHECK(api->set_number("target_fps", 7) == 1 && g_config.target_fps == 30, "below the range clamps up, not to 0");
+    CHECK(api->set_number("target_fps", 99999) == 1 && g_config.target_fps == 1000, "above the range clamps down");
+
+    // A setting with no special zero still clamps zero normally -- 0 is invalid for osd_scale, not a mode.
+    CHECK(api->set_number("osd_scale", 0) == 1 && g_config.osd_scale == 0.5f, "an ordinary zero still clamps");
+
+    // Every labelled zero survives being set, across the whole registry. This is the contract a host's
+    // slider depends on: offer the named mode at 0, and setting it actually leaves 0 there.
+    for (uint32_t i = 0; i < api->setting_count(); ++i) {
+        ReLimiterSettingInfo info {};
+        info.struct_size = sizeof(info);
+        api->describe_setting(i, &info);
+        if (!info.zero_label) continue;
+        if (info.type == RELIMITER_TYPE_STRING || info.type == RELIMITER_TYPE_ENUM
+            || info.type == RELIMITER_TYPE_KEYBIND) continue;
+        double back = -1;
+        CHECK(api->set_number(info.key, 0) == 1, "a labelled zero can be set");
+        CHECK(api->get_number(info.key, &back) == 1 && back == 0.0, "a labelled zero reads back as zero");
+    }
+
     // Lifecycle reaches ReLimiter's own functions.
     api->apply(); api->save();
     CHECK(g_applied == 1 && g_saved == 1, "apply and save are wired");

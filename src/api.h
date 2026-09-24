@@ -54,6 +54,12 @@ typedef struct ReLimiterSettingInfo {
     double max_value;
     const char* const* choices; // RELIMITER_TYPE_ENUM only, else null
     uint32_t choice_count;
+    // When non-null, 0 is a valid SPECIAL value meaning this, and min_value/max_value describe the
+    // range only ABOVE zero. Three settings work that way -- target_fps, background_fps and
+    // fg_off_fps are each "0 = automatic" with a clamp applied to anything else -- and without this a
+    // host builds a slider from 0 and offers values ValidateConfig will silently throw away, or
+    // labels the automatic mode "0 fps". A host should render 0 as this text, then the range.
+    const char* zero_label;
 } ReLimiterSettingInfo;
 
 typedef struct ReLimiterApi {

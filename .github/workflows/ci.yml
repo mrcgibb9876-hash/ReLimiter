@@ -25,6 +25,10 @@ jobs:
 
       # Cheapest check first, and the one that catches the failure that is otherwise silent: a setting
       # added to Config that the host-API registry does not list simply never appears in a host UI.
+      # Checks the registry covers every Config field AND that its ranges match ValidateConfig's
+      # clamps. The ranges matter as much as the coverage: a range wider than the clamp makes a host
+      # offer values ReLimiter discards on the next load, which to a user is a setting that will not
+      # stick. Four ranges in the first draft of the registry were guessed, and all four were wrong.
       - name: Host API registry matches struct Config
         run: python tools/check_api_registry.py
 

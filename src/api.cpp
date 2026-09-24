@@ -36,75 +36,76 @@ struct Entry {
     double max_value;
     const char* const* choices;
     uint32_t choice_count;
+    const char* zero_label;   // non-null: 0 is a special value meaning this; the range is above zero
 };
 
 // Order is the order a host will show them in, so it follows config.h.
 const Entry kSettings[] = {
-    { "target_fps", "Target FPS", "Core", "0 = stay below VRR ceiling", RELIMITER_TYPE_INT, 0, 1000, nullptr, 0 },
-    { "enforcement_marker", "Enforcement Marker", "Core", "", RELIMITER_TYPE_STRING, 0, 0, nullptr, 0 },
-    { "initial_wake_guard_us", "Initial Wake Guard (us)", "Wake Guard", "", RELIMITER_TYPE_DOUBLE, 0, 5000, nullptr, 0 },
-    { "osd_enabled", "OSD Enabled", "OSD", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_x", "OSD X", "OSD", "0.0–1.0 screen percentage", RELIMITER_TYPE_FLOAT, 0, 1, nullptr, 0 },
-    { "osd_y", "OSD Y", "OSD", "0.0–1.0 screen percentage", RELIMITER_TYPE_FLOAT, 0, 1, nullptr, 0 },
-    { "osd_opacity", "OSD Opacity", "OSD", "", RELIMITER_TYPE_FLOAT, 0, 1, nullptr, 0 },
-    { "osd_toggle_key", "OSD Toggle Key", "OSD", "", RELIMITER_TYPE_KEYBIND, 0, 0, nullptr, 0 },
-    { "osd_preset_prev_key", "OSD Preset Prev Key", "OSD", "", RELIMITER_TYPE_KEYBIND, 0, 0, nullptr, 0 },
-    { "osd_preset_next_key", "OSD Preset Next Key", "OSD", "", RELIMITER_TYPE_KEYBIND, 0, 0, nullptr, 0 },
-    { "osd_position_cycle_key", "OSD Position Cycle Key", "OSD", "Cycle OSD through corners", RELIMITER_TYPE_KEYBIND, 0, 0, nullptr, 0 },
-    { "osd_show_fps", "OSD Show FPS", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_frametime", "OSD Show Frametime", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_frametime_graph", "OSD Show Frametime Graph", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_fg", "OSD Show FG", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_limiter", "OSD Show Limiter", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_pqi", "OSD Show PQI", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_cpu_latency", "OSD Show CPU Latency", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_pqi_breakdown", "OSD Show PQI Breakdown", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_1pct_low", "OSD Show 1% low Low", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_smoothness", "OSD Show Smoothness", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_scale", "OSD Scale", "OSD appearance", "0.5 – 2.0 (50% – 200%)", RELIMITER_TYPE_FLOAT, 0.5, 2.0, nullptr, 0 },
-    { "osd_drop_shadow", "OSD Drop Shadow", "OSD appearance", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_text_brightness", "OSD Text Brightness", "OSD appearance", "0.0 – 1.0", RELIMITER_TYPE_FLOAT, 0, 1, nullptr, 0 },
-    { "window_mode", "Window Mode", "Window mode", "default | borderless | fullscreen", RELIMITER_TYPE_ENUM, 0, 0, k_window_mode_choices, 3 },
-    { "fake_fullscreen", "Fake Fullscreen", "Fake Fullscreen", "Intercept exclusive fullscreen → borderless window", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "background_fps", "Background FPS", "Background", "", RELIMITER_TYPE_INT, 0, 1000, nullptr, 0 },
-    { "fg_off_fps", "FG Off FPS", "Background", "0 = disabled, 30-360 = cap when FG not presenting", RELIMITER_TYPE_INT, 0, 360, nullptr, 0 },
-    { "vsync_mode", "VSync Mode", "VSync Override", "game | off | on", RELIMITER_TYPE_ENUM, 0, 0, k_vsync_mode_choices, 3 },
-    { "log_level", "Log Level", "Logging", "", RELIMITER_TYPE_ENUM, 0, 0, k_log_level_choices, 4 },
-    { "csv_enabled", "CSV Enabled", "CSV Telemetry", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "reflex_inject", "Reflex Inject", "Reflex Injection", "Synthesize Reflex markers for non-Reflex games", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "flip_model_override", "Flip Model Override", "Flip Model Override (DX11)", "Force DXGI_SWAP_EFFECT_FLIP_DISCARD on DX11 bitblt swapchains", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "shared_presets", "Shared Presets", "Flip Model Override (DX11)", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "dynamic_mfg_passthrough", "Dynamic MFG Passthrough", "Flip Model Override (DX11)", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "dmfg_output_cap", "DMFG Output Cap", "Flip Model Override (DX11)", "", RELIMITER_TYPE_INT, 0, 1000, nullptr, 0 },
-    { "adaptive_smoothing", "Adaptive Smoothing", "Adaptive Smoothing", "Enable P99-based adaptive smoothing (DX12+Reflex only)", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "smoothing_percentile", "Smoothing Percentile", "Adaptive Smoothing", "Target percentile (0.90–0.999)", RELIMITER_TYPE_DOUBLE, 0.9, 0.999, nullptr, 0 },
-    { "smoothing_window", "Smoothing Window", "Adaptive Smoothing", "\"medium\" (256 frames) | \"dual\" (64+512)", RELIMITER_TYPE_ENUM, 0, 0, k_smoothing_window_choices, 2 },
-    { "smoothing_bias_us", "Smoothing Bias (us)", "Adaptive Smoothing", "Constant bias added to computed offset (0–1000µs)", RELIMITER_TYPE_DOUBLE, 0, 1000, nullptr, 0 },
-    { "osd_show_adaptive_smoothing", "OSD Show Adaptive Smoothing", "OSD: Adaptive Smoothing", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_0_1pct_low", "OSD Show 0.1% low 1% low Low", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_gpu_render_time", "OSD Show GPU Render Time", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_total_frame_cost", "OSD Show Total Frame Cost", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_fg_time", "OSD Show FG Time", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_gpu_temp", "OSD Show GPU Temp", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_gpu_clock", "OSD Show GPU Clock", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_gpu_usage", "OSD Show GPU Usage", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_gpu_power", "OSD Show GPU Power", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_vram", "OSD Show VRAM", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_cpu_usage", "OSD Show CPU Usage", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_ram", "OSD Show RAM", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_dlss_quality", "OSD Show DLSS Quality", "OSD: DLSS info", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_dlss_features", "OSD Show DLSS Features", "OSD: DLSS info", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_dlss_resolution", "OSD Show DLSS Resolution", "OSD: DLSS info", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_dlss_presets", "OSD Show DLSS Presets", "OSD: DLSS info", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "osd_show_dlss_versions", "OSD Show DLSS Versions", "OSD: DLSS info", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "blackout_key", "Blackout Key", "Monitor Blackout", "Keybind to toggle monitor blackout", RELIMITER_TYPE_KEYBIND, 0, 0, nullptr, 0 },
-    { "oled_care_key", "OLED Care Key", "Monitor Blackout", "Keybind to toggle OLED Care (all-monitor blackout + 20fps)", RELIMITER_TYPE_KEYBIND, 0, 0, nullptr, 0 },
-    { "oled_care_all_monitors", "OLED Care All Monitors", "Monitor Blackout", "true = black all monitors, false = only game monitor", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "oled_care_idle_minutes", "OLED Care Idle Minutes", "Monitor Blackout", "0 = disabled, >0 = auto-activate after N minutes of no input", RELIMITER_TYPE_INT, 0, 240, nullptr, 0 },
-    { "selected_monitor", "Selected Monitor", "Monitor Blackout", "0 = default (no override), 1+ = monitor index", RELIMITER_TYPE_INT, 0, 16, nullptr, 0 },
-    { "focus_lock", "Focus Lock", "Monitor Blackout", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "streamline_compat", "Streamline Compat", "Monitor Blackout", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
-    { "dlss_info_hooks", "DLSS Info Hooks", "Monitor Blackout", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0 },
+    { "target_fps", "Target FPS", "Core", "0 = stay below VRR ceiling", RELIMITER_TYPE_INT, 30, 1000, nullptr, 0, "Auto (stay below the VRR ceiling)" },
+    { "enforcement_marker", "Enforcement Marker", "Core", "", RELIMITER_TYPE_STRING, 0, 0, nullptr, 0, nullptr },
+    { "initial_wake_guard_us", "Initial Wake Guard (us)", "Wake Guard", "", RELIMITER_TYPE_DOUBLE, 0, 10000, nullptr, 0, nullptr },
+    { "osd_enabled", "OSD Enabled", "OSD", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_x", "OSD X", "OSD", "0.0–1.0 screen percentage", RELIMITER_TYPE_FLOAT, 0, 1, nullptr, 0, nullptr },
+    { "osd_y", "OSD Y", "OSD", "0.0–1.0 screen percentage", RELIMITER_TYPE_FLOAT, 0, 1, nullptr, 0, nullptr },
+    { "osd_opacity", "OSD Opacity", "OSD", "", RELIMITER_TYPE_FLOAT, 0, 1, nullptr, 0, nullptr },
+    { "osd_toggle_key", "OSD Toggle Key", "OSD", "", RELIMITER_TYPE_KEYBIND, 0, 0, nullptr, 0, nullptr },
+    { "osd_preset_prev_key", "OSD Preset Prev Key", "OSD", "", RELIMITER_TYPE_KEYBIND, 0, 0, nullptr, 0, nullptr },
+    { "osd_preset_next_key", "OSD Preset Next Key", "OSD", "", RELIMITER_TYPE_KEYBIND, 0, 0, nullptr, 0, nullptr },
+    { "osd_position_cycle_key", "OSD Position Cycle Key", "OSD", "Cycle OSD through corners", RELIMITER_TYPE_KEYBIND, 0, 0, nullptr, 0, nullptr },
+    { "osd_show_fps", "OSD Show FPS", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_frametime", "OSD Show Frametime", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_frametime_graph", "OSD Show Frametime Graph", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_fg", "OSD Show FG", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_limiter", "OSD Show Limiter", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_pqi", "OSD Show PQI", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_cpu_latency", "OSD Show CPU Latency", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_pqi_breakdown", "OSD Show PQI Breakdown", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_1pct_low", "OSD Show 1% low Low", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_smoothness", "OSD Show Smoothness", "OSD element visibility", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_scale", "OSD Scale", "OSD appearance", "0.5 – 2.0 (50% – 200%)", RELIMITER_TYPE_FLOAT, 0.5, 2.0, nullptr, 0, nullptr },
+    { "osd_drop_shadow", "OSD Drop Shadow", "OSD appearance", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_text_brightness", "OSD Text Brightness", "OSD appearance", "0.0 – 1.0", RELIMITER_TYPE_FLOAT, 0, 1, nullptr, 0, nullptr },
+    { "window_mode", "Window Mode", "Window mode", "default | borderless | fullscreen", RELIMITER_TYPE_ENUM, 0, 0, k_window_mode_choices, 3, nullptr },
+    { "fake_fullscreen", "Fake Fullscreen", "Fake Fullscreen", "Intercept exclusive fullscreen → borderless window", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "background_fps", "Background FPS", "Background", "", RELIMITER_TYPE_INT, 20, 60, nullptr, 0, "Off (no background cap)" },
+    { "fg_off_fps", "FG Off FPS", "Background", "0 = disabled, 30-360 = cap when FG not presenting", RELIMITER_TYPE_INT, 30, 360, nullptr, 0, "Off (no cap when FG stops)" },
+    { "vsync_mode", "VSync Mode", "VSync Override", "game | off | on", RELIMITER_TYPE_ENUM, 0, 0, k_vsync_mode_choices, 3, nullptr },
+    { "log_level", "Log Level", "Logging", "", RELIMITER_TYPE_ENUM, 0, 0, k_log_level_choices, 4, nullptr },
+    { "csv_enabled", "CSV Enabled", "CSV Telemetry", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "reflex_inject", "Reflex Inject", "Reflex Injection", "Synthesize Reflex markers for non-Reflex games", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "flip_model_override", "Flip Model Override", "Flip Model Override (DX11)", "Force DXGI_SWAP_EFFECT_FLIP_DISCARD on DX11 bitblt swapchains", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "shared_presets", "Shared Presets", "Flip Model Override (DX11)", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "dynamic_mfg_passthrough", "Dynamic MFG Passthrough", "Flip Model Override (DX11)", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "dmfg_output_cap", "DMFG Output Cap", "Flip Model Override (DX11)", "", RELIMITER_TYPE_INT, 0, 0, nullptr, 0, "Off (no cap)" },
+    { "adaptive_smoothing", "Adaptive Smoothing", "Adaptive Smoothing", "Enable P99-based adaptive smoothing (DX12+Reflex only)", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "smoothing_percentile", "Smoothing Percentile", "Adaptive Smoothing", "Target percentile (0.90–0.999)", RELIMITER_TYPE_DOUBLE, 0.5, 0.999, nullptr, 0, nullptr },
+    { "smoothing_window", "Smoothing Window", "Adaptive Smoothing", "\"medium\" (256 frames) | \"dual\" (64+512)", RELIMITER_TYPE_ENUM, 0, 0, k_smoothing_window_choices, 2, nullptr },
+    { "smoothing_bias_us", "Smoothing Bias (us)", "Adaptive Smoothing", "Constant bias added to computed offset (0–1000µs)", RELIMITER_TYPE_DOUBLE, 0, 1000, nullptr, 0, nullptr },
+    { "osd_show_adaptive_smoothing", "OSD Show Adaptive Smoothing", "OSD: Adaptive Smoothing", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_0_1pct_low", "OSD Show 0.1% low 1% low Low", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_gpu_render_time", "OSD Show GPU Render Time", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_total_frame_cost", "OSD Show Total Frame Cost", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_fg_time", "OSD Show FG Time", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_gpu_temp", "OSD Show GPU Temp", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_gpu_clock", "OSD Show GPU Clock", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_gpu_usage", "OSD Show GPU Usage", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_gpu_power", "OSD Show GPU Power", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_vram", "OSD Show VRAM", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_cpu_usage", "OSD Show CPU Usage", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_ram", "OSD Show RAM", "OSD: Hardware monitoring", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_dlss_quality", "OSD Show DLSS Quality", "OSD: DLSS info", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_dlss_features", "OSD Show DLSS Features", "OSD: DLSS info", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_dlss_resolution", "OSD Show DLSS Resolution", "OSD: DLSS info", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_dlss_presets", "OSD Show DLSS Presets", "OSD: DLSS info", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "osd_show_dlss_versions", "OSD Show DLSS Versions", "OSD: DLSS info", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "blackout_key", "Blackout Key", "Monitor Blackout", "Keybind to toggle monitor blackout", RELIMITER_TYPE_KEYBIND, 0, 0, nullptr, 0, nullptr },
+    { "oled_care_key", "OLED Care Key", "Monitor Blackout", "Keybind to toggle OLED Care (all-monitor blackout + 20fps)", RELIMITER_TYPE_KEYBIND, 0, 0, nullptr, 0, nullptr },
+    { "oled_care_all_monitors", "OLED Care All Monitors", "Monitor Blackout", "true = black all monitors, false = only game monitor", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "oled_care_idle_minutes", "OLED Care Idle Minutes", "Monitor Blackout", "0 = disabled, >0 = auto-activate after N minutes of no input", RELIMITER_TYPE_INT, 0, 0, nullptr, 0, "Off (never auto-activate)" },
+    { "selected_monitor", "Selected Monitor", "Monitor Blackout", "0 = default (no override), 1+ = monitor index", RELIMITER_TYPE_INT, 0, 8, nullptr, 0, "Default (no override)" },
+    { "focus_lock", "Focus Lock", "Monitor Blackout", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "streamline_compat", "Streamline Compat", "Monitor Blackout", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
+    { "dlss_info_hooks", "DLSS Info Hooks", "Monitor Blackout", "", RELIMITER_TYPE_BOOL, 0, 1, nullptr, 0, nullptr },
 };
 
 constexpr uint32_t kSettingCount = (uint32_t) (sizeof(kSettings) / sizeof(kSettings[0]));
@@ -220,7 +221,10 @@ int ApiSetNumber(const char* key, double value) {
     if (!e) return 0;
     // Clamped here rather than trusted: a host is another program, and ValidateConfig only runs on
     // load. Entries with no meaningful range carry 0/0 and are left alone.
-    if (e->min_value != e->max_value) {
+    // Zero is left alone where it is a special value: clamping "auto" up to the minimum would turn
+    // "stay below the VRR ceiling" into a hard 30 fps cap, which is not what anyone asked for.
+    const bool special_zero = e->zero_label != nullptr && value == 0.0;
+    if (!special_zero && e->min_value != e->max_value) {
         if (value < e->min_value) value = e->min_value;
         if (value > e->max_value) value = e->max_value;
     }
@@ -274,6 +278,7 @@ int ApiDescribeSetting(uint32_t index, ReLimiterSettingInfo* out) {
     out->max_value = e.max_value;
     out->choices = e.choices;
     out->choice_count = e.choice_count;
+    out->zero_label = e.zero_label;
     return 1;
 }
 
