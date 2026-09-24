@@ -1,0 +1,81 @@
+# Build and check on every branch and pull request.
+#
+# release.yml only runs on main and skips itself when the tag already exists, so a change pushed to a
+# branch was never compiled by anything. The host API needs that: it is a new translation unit with a
+# dllexport, and MSVC is the compiler that decides whether it is right.
+#
+# The API test builds and runs here too, off a game and off a GPU. It defines its own Config and
+# ApplyConfig/SaveConfig, so it links against api.cpp alone -- config.cpp is deliberately not in the
+# link, which is also what keeps the test from needing the rest of ReLimiter.
+name: CI
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Cheapest check first, and the one that catches the failure that is otherwise silent: a setting
+      # added to Config that the host-API registry does not list simply never appears in a host UI.
+      - name: Host API registry matches struct Config
+        run: python tools/check_api_registry.py
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Configure (64-bit)
+        run: cmake -B build -A x64
+
+      - name: Build (64-bit)
+        run: cmake --build build --config Release
+
+      - name: Configure (32-bit)
+        run: cmake -B build32 -A Win32
+
+      - name: Build (32-bit)
+        run: cmake --build build32 --config Release
+
+      # The exported entry point is the whole contract with a host. If it is missing or decorated, a
+      # host's GetProcAddress finds nothing and the failure lands at runtime in someone's game.
+      - name: ReLimiterGetApi is exported undecorated
+        shell: pwsh
+        run: |
+          foreach ($pair in @(@('build/bin/Release/relimiter.addon64','x64'), @('build32/bin/Release/relimiter.addon32','Win32'))) {
+            $dll = $pair[0]; $arch = $pair[1]
+            if (-Not (Test-Path $dll)) { Write-Error "$dll was not built"; exit 1 }
+            $dumpbin = (Get-ChildItem "${env:ProgramFiles}\Microsoft Visual Studio" -Recurse -Filter dumpbin.exe -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+            if (-Not $dumpbin) { Write-Error 'dumpbin.exe not found'; exit 1 }
+            $exports = & $dumpbin /exports $dll
+            if ($exports -notmatch 'ReLimiterGetApi') { Write-Error "$arch : ReLimiterGetApi is not exported from $dll"; $exports; exit 1 }
+            # AddonInit is ReShade's entry point and must survive too -- adding an export must not
+            # disturb the ones that were already there.
+            if ($exports -notmatch 'AddonInit') { Write-Error "$arch : AddonInit is no longer exported"; exit 1 }
+            Write-Host "$arch : ReLimiterGetApi and AddonInit both exported"
+          }
+
+      - name: Build and run the host API test
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          $vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
+          cmd /c "`"$vcvars`" && cl /nologo /std:c++17 /EHsc /W3 /DRELIMITER_VERSION_STRING=\`"$((Get-Content VERSION).Trim())\`" /Fe:api_test.exe tests\api_test.cpp src\api.cpp"
+          if ($LASTEXITCODE -ne 0) { Write-Error 'api_test failed to build'; exit 1 }
+          ./api_test.exe
+          if ($LASTEXITCODE -ne 0) { Write-Error 'api_test reported failures'; exit 1 }
+
+      - name: Upload the built add-ons
+        uses: actions/upload-artifact@v4
+        with:
+          name: relimiter-addons
+          path: |
+            build/bin/Release/relimiter.addon64
+            build32/bin/Release/relimiter.addon32
+          if-no-files-found: error
