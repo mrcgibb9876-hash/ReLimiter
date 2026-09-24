@@ -7,8 +7,18 @@ first version of this check "failed" on a DLL whose exports were fine. Parsing t
 but Python, works the same on a runner and a laptop, and can show what IS exported when a name is
 missing.
 
-    python tools/check_exports.py <image> <name> [<name> ...]
+    python tools/check_exports.py <image> <name> [...] [--stdcall-ok <name> [...]]
+
+Names before --stdcall-ok must appear EXACTLY. Names after it may also appear in MSVC's x86 stdcall
+form, _Name@<bytes>: a function declared WINAPI is __stdcall, and on 32-bit the linker decorates it.
+ReShade's AddonInit/AddonUninit are WINAPI, so relimiter.addon32 legitimately exports _AddonInit@8 --
+demanding the plain name there fails a perfectly good build.
+
+ReLimiterGetApi is deliberately NOT in that lenient set. It is cdecl so that it exports undecorated on
+both architectures, and a host's GetProcAddress can look it up by one name; if decoration ever appears
+on it, that is a real break and this should say so.
 """
+import re
 import struct
 import sys
 
@@ -63,9 +73,31 @@ def exports(path):
 if len(sys.argv) < 3:
     raise SystemExit(__doc__)
 
-image, wanted = sys.argv[1], sys.argv[2:]
+argv = sys.argv[1:]
+image = argv.pop(0)
+strict, lenient, seen_flag = [], [], False
+for a in argv:
+    if a == "--stdcall-ok":
+        seen_flag = True
+    elif seen_flag:
+        lenient.append(a)
+    else:
+        strict.append(a)
+
 have = exports(image)
-missing = [n for n in wanted if n not in have]
+
+
+def present(name, allow_decoration):
+    if name in have:
+        return True
+    # MSVC x86 stdcall: _Name@<bytes>. Anchored, so it cannot match a different symbol that merely
+    # contains the name.
+    return allow_decoration and any(re.fullmatch(rf"_{re.escape(name)}@\d+", h) for h in have)
+
+
+missing = [n for n in strict if not present(n, False)]
+missing += [n for n in lenient if not present(n, True)]
+wanted = strict + lenient
 if missing:
     print(f"{image} does not export: {', '.join(missing)}")
     print(f"it exports {len(have)}: {', '.join(have) if have else '(nothing)'}")

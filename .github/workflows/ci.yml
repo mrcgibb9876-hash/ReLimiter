@@ -68,9 +68,9 @@ jobs:
           $a32 = (Get-ChildItem build32 -Recurse -Filter *.addon32 | Select-Object -First 1).FullName
           if (-Not $a64) { Write-Error 'no .addon64 was produced anywhere under build/'; exit 1 }
           if (-Not $a32) { Write-Error 'no .addon32 was produced anywhere under build32/'; exit 1 }
-          python tools/check_exports.py $a64 ReLimiterGetApi AddonInit AddonUninit
+          python tools/check_exports.py $a64 ReLimiterGetApi --stdcall-ok AddonInit AddonUninit
           if ($LASTEXITCODE -ne 0) { exit 1 }
-          python tools/check_exports.py $a32 ReLimiterGetApi AddonInit AddonUninit
+          python tools/check_exports.py $a32 ReLimiterGetApi --stdcall-ok AddonInit AddonUninit
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
       - name: Build and run the host API test
