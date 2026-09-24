@@ -80,12 +80,12 @@ jobs:
       # api.cpp falls back to "unknown" when RELIMITER_VERSION_STRING is not defined, and the test only
       # asserts the version is non-empty -- so the define is left out rather than threaded through two
       # layers of PowerShell and cmd quoting, which is what broke the first attempt at this step.
-      - name: Build and run the host API test
+      # Built by CMake as part of the 64-bit build above, so it runs with the toolchain MSBuild
+      # already set up. Three attempts at calling vcvars from a workflow step failed on shell quoting
+      # and paths before it became obvious the repo already had a tests/CMakeLists.txt doing this.
+      - name: Run the host API test
         shell: cmd
-        run: |
-          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" || call "%ProgramFiles%\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
-          cl /nologo /std:c++17 /EHsc /Fe:api_test.exe tests\api_test.cpp src\api.cpp || exit /b 1
-          api_test.exe || exit /b 1
+        run: build\bin\Release\api_test.exe
 
       - name: Upload the built add-ons
         uses: actions/upload-artifact@v4
