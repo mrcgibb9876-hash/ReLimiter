@@ -19,9 +19,17 @@ endif()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+# ── Version ──
+# src/version.rc carried the only copy of the version, as an RC-only #define that C++ could not read.
+# api.cpp reports it over the host API, so it is read from the VERSION file here and handed to both.
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" RELIMITER_VERSION LIMIT_COUNT 1)
+string(STRIP "${RELIMITER_VERSION}" RELIMITER_VERSION)
+message(STATUS "ReLimiter: version ${RELIMITER_VERSION}")
+
 # ── Sources (shared — builds for both 32 and 64-bit) ──
 set(ADDON_SOURCES
     src/dllmain.cpp
+    src/api.cpp
     src/cadence_meter.cpp
     src/ceiling_margin.cpp
     src/config.cpp
@@ -137,6 +145,7 @@ target_include_directories(relimiter PRIVATE
 
 # ── Preprocessor ──
 target_compile_definitions(relimiter PRIVATE
+    RELIMITER_VERSION_STRING="${RELIMITER_VERSION}"
     NOMINMAX
     WIN32_LEAN_AND_MEAN
     IMGUI_DISABLE_DEMO_WINDOWS
