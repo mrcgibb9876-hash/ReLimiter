@@ -43,17 +43,35 @@ jobs:
       - name: Build (32-bit)
         run: cmake --build build32 --config Release
 
+      # What the build actually produced. The paths below were taken from release.yml, which has
+      # never run to completion -- it skips itself whenever the tag already exists, which it always
+      # does -- so they were never verified by anything. Listed before they are used, so a wrong path
+      # says so instead of looking like a missing export.
+      - name: List what was built
+        shell: pwsh
+        run: |
+          foreach ($root in @('build', 'build32')) {
+            Get-ChildItem -Path $root -Recurse -Include *.addon64,*.addon32,*.dll -ErrorAction SilentlyContinue |
+              ForEach-Object { "$($_.FullName.Replace((Get-Location).Path + '\\',''))  $([math]::Round($_.Length/1MB,2)) MB" }
+          }
+
       # The exported entry point is the whole contract with a host: missing or decorated, a host's
       # GetProcAddress finds nothing and the failure lands at runtime in somebody's game.
       #
       # Read out of the PE export directory rather than by shelling out to dumpbin. dumpbin needs the
       # VC environment loaded to run at all -- without it it launches and produces nothing, which is
-      # how the first version of this step "failed" on a DLL whose exports were in fact fine. Parsing
-      # the file needs nothing but Python and prints what IS exported when a name is missing.
+      # how the first version of this step "failed" on a DLL whose exports were in fact fine.
       - name: ReLimiterGetApi is exported undecorated
+        shell: pwsh
         run: |
-          python tools/check_exports.py build/bin/Release/relimiter.addon64 ReLimiterGetApi AddonInit AddonUninit
-          python tools/check_exports.py build32/bin/Release/relimiter.addon32 ReLimiterGetApi AddonInit AddonUninit
+          $a64 = (Get-ChildItem build -Recurse -Filter *.addon64 | Select-Object -First 1).FullName
+          $a32 = (Get-ChildItem build32 -Recurse -Filter *.addon32 | Select-Object -First 1).FullName
+          if (-Not $a64) { Write-Error 'no .addon64 was produced anywhere under build/'; exit 1 }
+          if (-Not $a32) { Write-Error 'no .addon32 was produced anywhere under build32/'; exit 1 }
+          python tools/check_exports.py $a64 ReLimiterGetApi AddonInit AddonUninit
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          python tools/check_exports.py $a32 ReLimiterGetApi AddonInit AddonUninit
+          if ($LASTEXITCODE -ne 0) { exit 1 }
 
       - name: Build and run the host API test
         shell: pwsh

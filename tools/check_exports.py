@@ -14,7 +14,12 @@ import sys
 
 
 def exports(path):
-    d = open(path, "rb").read()
+    # A clean message, not a traceback: the first version of the CI step that used this raised
+    # FileNotFoundError and exited in zero seconds, which read exactly like "the export is missing".
+    try:
+        d = open(path, "rb").read()
+    except OSError as e:
+        raise SystemExit(f"{path}: cannot be read ({e.strerror})")
     if d[:2] != b"MZ":
         raise SystemExit(f"{path}: not a PE image")
     pe = struct.unpack_from("<I", d, 0x3C)[0]
