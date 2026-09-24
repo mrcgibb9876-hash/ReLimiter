@@ -43,23 +43,17 @@ jobs:
       - name: Build (32-bit)
         run: cmake --build build32 --config Release
 
-      # The exported entry point is the whole contract with a host. If it is missing or decorated, a
-      # host's GetProcAddress finds nothing and the failure lands at runtime in someone's game.
+      # The exported entry point is the whole contract with a host: missing or decorated, a host's
+      # GetProcAddress finds nothing and the failure lands at runtime in somebody's game.
+      #
+      # Read out of the PE export directory rather than by shelling out to dumpbin. dumpbin needs the
+      # VC environment loaded to run at all -- without it it launches and produces nothing, which is
+      # how the first version of this step "failed" on a DLL whose exports were in fact fine. Parsing
+      # the file needs nothing but Python and prints what IS exported when a name is missing.
       - name: ReLimiterGetApi is exported undecorated
-        shell: pwsh
         run: |
-          foreach ($pair in @(@('build/bin/Release/relimiter.addon64','x64'), @('build32/bin/Release/relimiter.addon32','Win32'))) {
-            $dll = $pair[0]; $arch = $pair[1]
-            if (-Not (Test-Path $dll)) { Write-Error "$dll was not built"; exit 1 }
-            $dumpbin = (Get-ChildItem "${env:ProgramFiles}\Microsoft Visual Studio" -Recurse -Filter dumpbin.exe -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
-            if (-Not $dumpbin) { Write-Error 'dumpbin.exe not found'; exit 1 }
-            $exports = & $dumpbin /exports $dll
-            if ($exports -notmatch 'ReLimiterGetApi') { Write-Error "$arch : ReLimiterGetApi is not exported from $dll"; $exports; exit 1 }
-            # AddonInit is ReShade's entry point and must survive too -- adding an export must not
-            # disturb the ones that were already there.
-            if ($exports -notmatch 'AddonInit') { Write-Error "$arch : AddonInit is no longer exported"; exit 1 }
-            Write-Host "$arch : ReLimiterGetApi and AddonInit both exported"
-          }
+          python tools/check_exports.py build/bin/Release/relimiter.addon64 ReLimiterGetApi AddonInit AddonUninit
+          python tools/check_exports.py build32/bin/Release/relimiter.addon32 ReLimiterGetApi AddonInit AddonUninit
 
       - name: Build and run the host API test
         shell: pwsh
